@@ -1,5 +1,6 @@
 import logging
 import random
+import asyncio
 from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import (
@@ -10,13 +11,13 @@ from telegram.ext import (
 )
 
 # === KONFIGURASI ===
-BOT_TOKEN = "YOUR_BOT_TOKEN"
-OWNER_ID = 123456789  # ganti ke user ID kamu
+BOT_TOKEN = "7942334918:AAFLwMH2NABwkk9kFOrF0vTrXHoe8H_mjuo"
+OWNER_ID = 7742582171
 SUDO_USERS = [OWNER_ID]
 DEV_USERS = [OWNER_ID]
 
-ALLOWED_CHAT = -1001234567890       # ID grup kamu
-ALLOWED_THREAD_ID = 123             # ID topik/thread (opsional)
+ALLOWED_CHAT = -1002334074368
+ALLOWED_THREAD_ID = 38790
 
 EMOJIS = ['😎', '🔥', '🎯', '💥', '✨', '🚀', '👑', '💎']
 
@@ -24,35 +25,33 @@ EMOJIS = ['😎', '🔥', '🎯', '💥', '✨', '🚀', '👑', '💎']
 def is_allowed(update: Update) -> bool:
     if not update.message:
         return False
-
     chat_id = update.effective_chat.id
     thread_id = update.message.message_thread_id
     return chat_id == ALLOWED_CHAT and thread_id == ALLOWED_THREAD_ID
 
-# === TAG COMMAND ===
+# === TAG ADMIN SATU PER SATU ===
 async def tag_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         await update.message.reply_text("⛔ Bot hanya bisa digunakan di topik tertentu.")
         return
 
-    members = []
-    async for member in context.bot.get_chat_administrators(update.effective_chat.id):
-        if not member.user.is_bot:
-            members.append(member.user)
+    admins = await context.bot.get_chat_administrators(update.effective_chat.id)
+    members = [admin.user for admin in admins if not admin.user.is_bot]
 
-    mentions = []
+    await update.message.reply_text("🚀 Mulai tag admin satu per satu...", reply_to_message_id=update.message.message_id)
+
     for user in members:
         emoji = random.choice(EMOJIS)
-        mention = f"{emoji} [{user.first_name}](tg://user?id={user.id})"
-        mentions.append(mention)
-
-    text = "🔥 *TAG SEMUA ADMIN:*\n" + "\n".join(mentions)
-    await update.message.reply_text(
-        text,
-        parse_mode=ParseMode.MARKDOWN,
-        disable_web_page_preview=True,
-        reply_to_message_id=update.message.message_id
-    )
+        username = f"@{user.username}" if user.username else user.first_name
+        mention = f"[{user.first_name}](tg://user?id={user.id})"
+        text = f"{emoji} {username} — {mention}"
+        await update.message.reply_text(
+            text,
+            parse_mode=ParseMode.MARKDOWN,
+            disable_web_page_preview=True,
+            message_thread_id=update.message.message_thread_id
+        )
+        await asyncio.sleep(1)  # delay antar tag, bisa diubah
 
 # === ROLE INFO ===
 async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -76,11 +75,14 @@ async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def id_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cid = update.effective_chat.id
     thread_id = update.message.message_thread_id
-    await update.message.reply_text(f"Chat ID: <code>{cid}</code>\nThread ID: <code>{thread_id}</code>", parse_mode="HTML")
+    await update.message.reply_text(
+        f"Chat ID: <code>{cid}</code>\nThread ID: <code>{thread_id}</code>",
+        parse_mode="HTML"
+    )
 
 # === START ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ Bot aktif!\nGunakan /tag untuk mention semua admin.")
+    await update.message.reply_text("✅ Bot aktif!\nGunakan /tag untuk mention semua admin satu per satu.")
 
 # === MAIN ===
 if __name__ == "__main__":
