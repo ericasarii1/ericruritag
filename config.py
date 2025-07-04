@@ -29,29 +29,36 @@ def is_allowed(update: Update) -> bool:
     thread_id = update.message.message_thread_id
     return chat_id == ALLOWED_CHAT and thread_id == ALLOWED_THREAD_ID
 
-# === TAG ADMIN SATU PER SATU ===
+# === TAG ADMIN SATU PER SATU DENGAN ALASAN ===
 async def tag_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         await update.message.reply_text("⛔ Bot hanya bisa digunakan di topik tertentu.")
         return
 
+    reason = " ".join(context.args) if context.args else None
+
     admins = await context.bot.get_chat_administrators(update.effective_chat.id)
     members = [admin.user for admin in admins if not admin.user.is_bot]
 
-    await update.message.reply_text("🚀 Mulai tag admin satu per satu...", reply_to_message_id=update.message.message_id)
+    await update.message.reply_text(
+        "🚀 Mulai tag admin satu per satu...",
+        reply_to_message_id=update.message.message_id
+    )
 
     for user in members:
         emoji = random.choice(EMOJIS)
         username = f"@{user.username}" if user.username else user.first_name
         mention = f"[{user.first_name}](tg://user?id={user.id})"
         text = f"{emoji} {username} — {mention}"
+        if reason:
+            text += f"\n🗒️ Alasan: {reason}"
         await update.message.reply_text(
             text,
             parse_mode=ParseMode.MARKDOWN,
             disable_web_page_preview=True,
             message_thread_id=update.message.message_thread_id
         )
-        await asyncio.sleep(1)  # delay antar tag, bisa diubah
+        await asyncio.sleep(1)
 
 # === ROLE INFO ===
 async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -82,7 +89,9 @@ async def id_check(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # === START ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ Bot aktif!\nGunakan /tag untuk mention semua admin satu per satu.")
+    await update.message.reply_text(
+        "✅ Bot aktif!\nGunakan:\n/tag [alasan opsional]\nContoh: /tag ayo kerja bareng!"
+    )
 
 # === MAIN ===
 if __name__ == "__main__":
